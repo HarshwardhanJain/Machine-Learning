@@ -1,0 +1,58 @@
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+# Load the data
+file_path = r'Lab Work - 02_19_25\Amazon.csv'
+data = pd.read_csv(file_path)
+
+# Preprocess the data
+# Replace 'NA' with np.nan and then fillna with 0 for computation purposes
+data = data.replace('NA', np.nan)
+data = data.fillna(0)
+
+# Convert all columns except 'user_id' to numeric
+for col in data.columns[1:]:
+    data[col] = pd.to_numeric(data[col])
+
+# Compute user similarities using cosine similarity
+user_similarity = cosine_similarity(data.iloc[:, 1:])
+
+# Convert the similarity matrix to a DataFrame for better readability
+user_similarity_df = pd.DataFrame(user_similarity, index=data['user_id'], columns=data['user_id'])
+
+# Function to get top N similar users
+def get_top_n_similar_users(user_id, n=5):
+    if user_id not in user_similarity_df.index:
+        return []
+    similar_users = user_similarity_df[user_id].sort_values(ascending=False).index[1:n+1]
+    return similar_users
+
+# Function to recommend movies for a given user
+def recommend_movies(user_id, n_recommendations=1):
+    similar_users = get_top_n_similar_users(user_id)
+    if similar_users.empty:
+        return []
+
+    # Get the movies rated by similar users
+    similar_users_data = data[data['user_id'].isin(similar_users)]
+    
+    # Calculate the average rating for each movie by similar users
+    movie_ratings = similar_users_data.iloc[:, 1:].mean(axis=0)
+    
+    # Get the movies that the target user has not rated
+    user_ratings = data[data['user_id'] == user_id].iloc[:, 1:].squeeze()
+    unrated_movies = user_ratings[user_ratings == 0].index
+    
+    # Recommend the top N movies with the highest average rating
+    recommendations = movie_ratings[unrated_movies].sort_values(ascending=False).head(n_recommendations)
+    return recommendations
+
+# Example usage
+user_id = 'A3R5OBKS7OM2IR'
+recommendations = recommend_movies(user_id)
+
+# Format the output nicely
+print(f"Recommendations for user {user_id}:")
+for movie, score in recommendations.items():
+    print(f"{movie}: {score:.2f}")
