@@ -1,0 +1,29 @@
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load and preprocess data
+file_path = r"Lab Work - 02_19_25\Amazon.csv"
+df = pd.read_csv(file_path)
+ratings = df.drop(columns=['user_id']).fillna(0)  # Drop user_id and fill NaNs with 0
+
+# Compute cosine similarity between movies
+similarity_matrix = pd.DataFrame(cosine_similarity(ratings.T), 
+                                 index=ratings.columns, 
+                                 columns=ratings.columns)
+
+print("Similarity Matrix:")
+print(similarity_matrix)
+
+def get_similar_movies(movie, top_n=1):
+    """ Returns the top N most similar movies to the given movie. """
+    if movie not in similarity_matrix:
+        return "Movie not found!"
+    
+    similar_movies = similarity_matrix[movie].sort_values(ascending=False)[1:top_n+1]
+    return similar_movies
+
+# Main code
+movie_to_check = input("Enter the movie name: ")
+similar_movies = get_similar_movies(movie_to_check)
+print("Similar Movies:")
+print(similar_movies)
