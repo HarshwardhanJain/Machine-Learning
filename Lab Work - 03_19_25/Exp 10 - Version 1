@@ -1,0 +1,54 @@
+import numpy as np
+
+# Matrix Factorization using Stochastic Gradient Descent (SGD)
+def matrix_factorization(R, num_features, alpha, lambda_, num_iterations):
+    num_users, num_items = R.shape
+    
+    # Initialize P (user matrix) and Q (item matrix) with small random values
+    P = np.random.rand(num_users, num_features)
+    Q = np.random.rand(num_items, num_features)
+    
+    # Training using SGD
+    for iteration in range(num_iterations):
+        for u in range(num_users):
+            for i in range(num_items):
+                if R[u, i] > 0:  # Only consider known ratings
+                    e_ui = R[u, i] - np.dot(P[u, :], Q[i, :].T)  # Compute error
+                    
+                    # Update user and item matrices
+                    P[u, :] += alpha * (e_ui * Q[i, :] - lambda_ * P[u, :])
+                    Q[i, :] += alpha * (e_ui * P[u, :] - lambda_ * Q[i, :])
+        
+        # Compute total error (for monitoring)
+        total_error = 0
+        for u in range(num_users):
+            for i in range(num_items):
+                if R[u, i] > 0:
+                    total_error += (R[u, i] - np.dot(P[u, :], Q[i, :].T)) ** 2
+        
+        print(f"Iteration {iteration + 1}, Error: {total_error}")
+    
+    return np.dot(P, Q.T)  # Return the predicted matrix
+
+# Example user-item rating matrix (0 means unknown/missing ratings)
+R = np.array([
+    [5, 3, 0, 1],
+    [4, 0, 0, 1],
+    [1, 1, 0, 5],
+    [0, 0, 5, 4],
+    [0, 0, 5, 4],
+])
+
+# Hyperparameters
+num_features = 2  # Number of latent factors
+alpha = 0.01  # Learning rate
+lambda_ = 0.02  # Regularization parameter
+num_iterations = 100  # Number of training iterations
+
+# Train the model and get predicted ratings
+R_pred = matrix_factorization(R, num_features, alpha, lambda_, num_iterations)
+
+print("\nOriginal Ratings Matrix:")
+print(R)
+print("\nPredicted Ratings Matrix:")
+print(np.round(R_pred, 2))
